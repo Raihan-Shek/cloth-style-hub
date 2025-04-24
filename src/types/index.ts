@@ -19,3 +19,15 @@ export interface CartItem {
   quantity: number;
   size: ProductSize;
 }
+
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'canceled';
+
+export interface Order {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  items: CartItem[];
+  total: number;
+  status: OrderStatus;
+  createdAt: string;
+}

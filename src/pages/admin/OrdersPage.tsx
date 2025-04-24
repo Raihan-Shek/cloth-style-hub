@@ -1,24 +1,123 @@
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import OrderForm from '@/components/admin/OrderForm';
+import { Order } from '@/types';
+
+// Mock order storage - in a real application this would connect to a backend
+const useOrders = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  
+  const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    const newOrder: Order = {
+      ...orderData,
+      id: `order-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setOrders([newOrder, ...orders]);
+    return newOrder;
+  };
+  
+  return { orders, addOrder };
+};
 
 const OrdersPage = () => {
+  const { orders, addOrder } = useOrders();
+  const [showForm, setShowForm] = useState(false);
+  
+  const handleCreateOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    const newOrder = addOrder(orderData);
+    setShowForm(false);
+    toast({
+      title: "Order created",
+      description: `Order #${newOrder.id} created successfully`,
+    });
+  };
+  
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold">Orders</h2>
-        <p className="text-gray-500 text-sm">
-          Manage and track customer orders
-        </p>
-      </div>
-      
-      <Card className="p-6">
-        <div className="text-center py-8">
-          <h3 className="text-lg font-medium">No Orders Yet</h3>
-          <p className="text-gray-500 mt-2">
-            When customers place orders, they will appear here.
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-semibold">Orders</h2>
+          <p className="text-gray-500 text-sm">
+            Manage and track customer orders
           </p>
         </div>
-      </Card>
+        
+        <Button onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : 'Add New Order'}
+        </Button>
+      </div>
+      
+      {showForm ? (
+        <Card className="p-6 mb-6">
+          <h3 className="text-xl font-medium mb-4">Create New Order</h3>
+          <OrderForm onSubmit={handleCreateOrder} />
+        </Card>
+      ) : null}
+      
+      {orders.length > 0 ? (
+        <div className="space-y-4">
+          {orders.map(order => (
+            <Card key={order.id} className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Order #{order.id}</h3>
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {order.status}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-gray-500">Customer</p>
+                  <p>{order.customerName}</p>
+                  <p>{order.customerEmail}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Order Details</p>
+                  <p>Items: {order.items.length}</p>
+                  <p>Total: ${order.total.toFixed(2)}</p>
+                  <p>Date: {new Date(order.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-md overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {order.items.map((item, index) => (
+                      <tr key={`${item.product.id}-${item.size}-${index}`}>
+                        <td className="px-4 py-2">{item.product.name}</td>
+                        <td className="px-4 py-2">{item.size}</td>
+                        <td className="px-4 py-2">{item.quantity}</td>
+                        <td className="px-4 py-2">${(item.product.price * item.quantity).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <h3 className="text-lg font-medium">No Orders Yet</h3>
+            <p className="text-gray-500 mt-2">
+              {showForm ? "Complete the form above to create your first order." : "Click 'Add New Order' to create a new order."}
+            </p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
