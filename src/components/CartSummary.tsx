@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from '@/components/ui/use-toast';
+import { useProducts } from '@/context/ProductContext';
+import { Order } from '@/types';
 
 const CartSummary = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
@@ -11,14 +13,34 @@ const CartSummary = () => {
   const handleCheckout = () => {
     setIsCheckingOut(true);
     
-    // Simulate checkout process
+    // Create a new order object
+    const order: Omit<Order, 'id' | 'createdAt'> = {
+      customerName: 'Guest User', // In a real app, this would come from authenticated user
+      customerEmail: 'guest@example.com', // In a real app, this would come from authenticated user
+      items: cart,
+      total: getTotalPrice(),
+      status: 'pending'
+    };
+    
+    // Simulate API call
     setTimeout(() => {
-      toast({
-        title: "Order placed successfully!",
-        description: "Thank you for your purchase.",
-      });
+      // Store the order in localStorage
+      const orders = JSON.parse(localStorage.getItem('adminOrders') || '[]');
+      const newOrder = {
+        ...order,
+        id: `order-${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+      orders.push(newOrder);
+      localStorage.setItem('adminOrders', JSON.stringify(orders));
+      
+      // Clear cart and show success message
       clearCart();
       setIsCheckingOut(false);
+      toast({
+        title: "Order placed successfully!",
+        description: "Your order has been created and is pending review.",
+      });
     }, 1500);
   };
   

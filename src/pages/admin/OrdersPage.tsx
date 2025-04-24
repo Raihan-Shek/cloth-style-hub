@@ -1,14 +1,26 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import OrderForm from '@/components/admin/OrderForm';
 import { Order } from '@/types';
 
-// Mock order storage - in a real application this would connect to a backend
+// Order storage using localStorage
 const useOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  
+  // Load orders from localStorage
+  useEffect(() => {
+    const storedOrders = localStorage.getItem('adminOrders');
+    if (storedOrders) {
+      try {
+        setOrders(JSON.parse(storedOrders));
+      } catch (e) {
+        console.error('Failed to parse orders from localStorage', e);
+      }
+    }
+  }, []);
   
   const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
     const newOrder: Order = {
@@ -16,7 +28,9 @@ const useOrders = () => {
       id: `order-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    setOrders([newOrder, ...orders]);
+    const updatedOrders = [newOrder, ...orders];
+    setOrders(updatedOrders);
+    localStorage.setItem('adminOrders', JSON.stringify(updatedOrders));
     return newOrder;
   };
   
