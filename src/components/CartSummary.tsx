@@ -1,47 +1,42 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from '@/components/ui/use-toast';
-import { useProducts } from '@/context/ProductContext';
 import { Order } from '@/types';
+import { createOrder } from '@/lib/orders';
 
 const CartSummary = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsCheckingOut(true);
     
-    // Create a new order object
-    const order: Omit<Order, 'id' | 'createdAt'> = {
-      customerName: 'Guest User', // In a real app, this would come from authenticated user
-      customerEmail: 'guest@example.com', // In a real app, this would come from authenticated user
-      items: cart,
-      total: getTotalPrice(),
-      status: 'pending'
-    };
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Store the order in localStorage
-      const orders = JSON.parse(localStorage.getItem('adminOrders') || '[]');
-      const newOrder = {
-        ...order,
-        id: `order-${Date.now()}`,
-        createdAt: new Date().toISOString()
+    try {
+      const order: Omit<Order, 'id' | 'createdAt'> = {
+        customerName: 'Guest User',
+        customerEmail: 'guest@example.com',
+        items: cart,
+        total: getTotalPrice(),
+        status: 'pending'
       };
-      orders.push(newOrder);
-      localStorage.setItem('adminOrders', JSON.stringify(orders));
       
-      // Clear cart and show success message
+      await createOrder(order);
+      
       clearCart();
-      setIsCheckingOut(false);
       toast({
         title: "Order placed successfully!",
         description: "Your order has been created and is pending review.",
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error placing order",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
   
   const subtotal = getTotalPrice();

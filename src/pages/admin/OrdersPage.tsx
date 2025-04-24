@@ -1,54 +1,52 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import OrderForm from '@/components/admin/OrderForm';
 import { Order } from '@/types';
-
-// Order storage using localStorage
-const useOrders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  
-  // Load orders from localStorage
-  useEffect(() => {
-    const storedOrders = localStorage.getItem('adminOrders');
-    if (storedOrders) {
-      try {
-        setOrders(JSON.parse(storedOrders));
-      } catch (e) {
-        console.error('Failed to parse orders from localStorage', e);
-      }
-    }
-  }, []);
-  
-  const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
-    const newOrder: Order = {
-      ...orderData,
-      id: `order-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedOrders = [newOrder, ...orders];
-    setOrders(updatedOrders);
-    localStorage.setItem('adminOrders', JSON.stringify(updatedOrders));
-    return newOrder;
-  };
-  
-  return { orders, addOrder };
-};
+import { createOrder, fetchOrders } from '@/lib/orders';
+import { useQuery } from '@tanstack/react-query';
 
 const OrdersPage = () => {
-  const { orders, addOrder } = useOrders();
   const [showForm, setShowForm] = useState(false);
   
-  const handleCreateOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
-    const newOrder = addOrder(orderData);
-    setShowForm(false);
-    toast({
-      title: "Order created",
-      description: `Order #${newOrder.id} created successfully`,
-    });
+  const { data: orders = [], isLoading, error } = useQuery({
+    queryKey: ['orders'],
+    queryFn: fetchOrders,
+  });
+  
+  const handleCreateOrder = async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    try {
+      await createOrder(orderData);
+      setShowForm(false);
+      toast({
+        title: "Order created",
+        description: "Order created successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error creating order",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>Loading orders...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-red-500">Error loading orders. Please try again later.</p>
+      </div>
+    );
+  }
   
   return (
     <div>
