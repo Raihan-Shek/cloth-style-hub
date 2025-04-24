@@ -12,7 +12,8 @@ const CategoryPage = () => {
   const { getProductsByCategory, loading } = useProducts();
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   
-  const validCategory = (category === 'men' || category === 'women') 
+  // Ensure the category param is correctly validated
+  const validCategory = (category === 'women' || category === 'men') 
     ? category 
     : 'men';
     
